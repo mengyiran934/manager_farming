@@ -1,0 +1,72 @@
+# 农产品交易平台后端架构演讲提纲
+
+## 一、项目架构全景（配架构图）
+1. 四层架构设计：网关层→业务服务层→数据访问层→文件存储层
+2. 模块化开发：用户/商品/交易三大核心模块解耦
+
+## 二、RESTful API设计规范
+```python
+@app.route('/api/product/<int:pid>')
+def api_product(pid):
+    # 实现商品详情查询
+    # 严格遵循HTTP语义：GET-查询/POST-创建/PUT-更新
+```
+✔ 11个标准化接口
+✔ 状态码规范（401/404/500）
+✔ Swagger文档自动生成（预留）
+
+## 三、双缓存机制实现
+```python
+# 内存缓存（高频数据）
+performance_history = deque(maxlen=50)  
+
+# SQLite持久化（全量数据）
+@app.before_request
+def db_connector():
+    g.conn = sqlite3.connect(USER_DB)
+
+# 双写逻辑示例
+cursor.execute("UPDATE products SET sold_quantity = sold_quantity + 1")
+update_cache("product_sold", pid)
+```
+
+## 四、文件安全处理
+1. 上传防护三重机制：
+   - 文件类型白名单验证
+   - UUID重命名（防路径遍历）
+   - 临时文件自动清理
+```python
+temp_filename = f"temp_{uuid.uuid4().hex[:6]}.jpg"
+```
+
+## 五、动态SQL生成技术
+```python
+query = 'SELECT * FROM users WHERE 1=1'
+params = []
+
+if uid:
+    query += ' AND uid=?'
+    params.append(uid)
+# 自动构建安全查询语句
+```
+
+## 六、高并发优化策略
+1. 连接池管理：请求钩子自动获取/释放连接
+2. 异步任务队列：销量统计异步处理（预留）
+3. 监控体系：
+```python
+# 实时性能监控接口
+@app.route('/server_status')
+def api_server_status():
+    return jsonify({
+        'cpu_usage': psutil.cpu_percent(),
+        'mem_usage': psutil.virtual_memory().percent
+    })
+```
+
+## 七、项目演进规划
+1. 分布式架构改造（Redis集群+MySQL分库）
+2. 全链路监控（Prometheus+Grafana）
+3. 自动化测试覆盖率提升
+
+注：现场演示将配合架构流程图和核心代码片段讲解模块交互。

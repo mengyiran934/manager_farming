@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>服务器监控</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/js/echarts.min.js"></script>
+    <style>
+        .monitor-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        #chartContainer {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="monitor-card">
+            <h1 class="mb-4">📊 服务器实时状态</h1>
+            
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="alert alert-primary">
+                        <h4>在线用户 <span id="onlineUsers" class="badge bg-primary">0</span></h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="alert alert-success">
+                        <h4>CPU使用率 <span id="cpuUsage" class="badge bg-success">0%</span></h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="alert alert-warning">
+                        <h4>内存使用 <span id="memUsage" class="badge bg-warning">0%</span></h4>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chartContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        function updateData() {
+            fetch('/server_status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('onlineUsers').textContent = data.online_users;
+                    document.getElementById('cpuUsage').textContent = data.cpu_usage + '%';
+                    document.getElementById('memUsage').textContent = data.mem_usage + '%';
+
+                    // 更新ECharts图表
+                    if(typeof myChart !== 'undefined') {
+                        myChart.setOption({
+                            series: [{
+                                data: data.history
+                            }]
+                        });
+                    }
+                });
+        }
+
+        // 初始化图表
+        var myChart = echarts.init(document.getElementById('chartContainer'));
+        var option = {
+            title: { text: '负载历史趋势' },
+            tooltip: {},
+            xAxis: { type: 'time' },
+            yAxis: { min: 0, max: 100 },
+            series: [{ type: 'line', smooth: true }]
+        };
+        myChart.setOption(option);
+
+        // 每3秒更新数据
+        setInterval(updateData, 3000);
+        updateData();
+    </script>
+</body>
+</html>
